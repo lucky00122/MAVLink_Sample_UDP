@@ -54,7 +54,7 @@ int main(int argc, char* argv[])
 
 	// Check if --help flag was used
 	if((argc == 2) && (strcmp(argv[1], help) == 0))
-    {
+	{
 		printf("\n");
 		printf("\tUsage:\n\n");
 		printf("\t");
@@ -62,17 +62,17 @@ int main(int argc, char* argv[])
 		printf(" <ip address of QGroundControl>\n");
 		printf("\tDefault for localhost: udp-server 127.0.0.1\n\n");
 		exit(EXIT_FAILURE);
-    }
+	}
 	
 	// Change the target ip if parameter was given
 	if(argc == 2)
-    {
+	{
 		strcpy(target_ip, argv[1]);
-    }
-    else
-    {
+	}
+	else
+	{
 		strcpy(target_ip, CLIENT_IP);
-    }
+	}
 	
 	// Socket Initial
 	if((sock = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
@@ -87,11 +87,11 @@ int main(int argc, char* argv[])
 #else
 	if(fcntl(sock, F_SETFL, O_NONBLOCK | O_ASYNC) == -1)
 #endif
-    {
+	{
 		fprintf(stderr, "[ERR] setting nonblocking: %s\n", strerror(errno));
 		close(sock);
 		exit(EXIT_FAILURE);
-    }
+	}
 	
 	// Server Address config
 	memset(&locAddr, 0, sizeof(locAddr));
@@ -101,11 +101,11 @@ int main(int argc, char* argv[])
 	
 	/* Bind the socket to Local Address:SERVER_PORT - necessary to receive packets from qgroundcontrol */ 
 	if(bind(sock, (struct sockaddr *)&locAddr, sizeof(struct sockaddr)) == -1)
-    {
+	{
 		perror("[ERR] bind failed");
 		close(sock);
 		exit(EXIT_FAILURE);
-    } 
+	} 
 	
 	// Client Address config
 	memset(&gcAddr, 0, sizeof(gcAddr));
@@ -116,7 +116,7 @@ int main(int argc, char* argv[])
 	printf("Start sending/receiving MAVLink message to/from QGroundControl...\n");
 	
 	while(1) 
-    {
+	{
 		// Send Messages
 		
 		/* Send Heartbeat HEARTBEAT */
@@ -150,7 +150,7 @@ int main(int argc, char* argv[])
 		recsize = recvfrom(sock, (void *)buf, BUFFER_LENGTH, 0, (struct sockaddr *)&gcAddr, &fromlen);
 
 		if(recsize > 0)
-      	{
+		{
 			mavlink_message_t msg;
 			mavlink_status_t status;
 			
@@ -175,7 +175,7 @@ int main(int argc, char* argv[])
 		memset(buf, 0, BUFFER_LENGTH);
 
 		sleep(1); // Sleep one second
-    }
+	}
 }
 
 /* QNX timer version */
