@@ -1,9 +1,10 @@
 # MAVLink_Sample_UDP
+Purpose:<br>
 MAVLink study on UDP socket at localhost "127.0.0.1".
 
 Reference:<br>
 MAVLink website: https://mavlink.io/en/mavgen_c/example_c_udp.html<br>
-Socket tutorial: http://zake7749.github.io/2015/03/17/SocketProgramming/<br>
+Socket tutorial: http://zake7749.github.io/2015/03/17/SocketProgramming/
 
 
 Source:<br>
