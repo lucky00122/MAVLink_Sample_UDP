@@ -24,8 +24,6 @@
 #include <stdbool.h> /* required for the definition of bool in C99 */
 #endif
 
-/* This assumes you have the mavlink headers on your include path
- or in the same folder as this source file */
 #include <mavlink.h>
 
 #define CLIENT_IP		"127.0.0.1"
@@ -39,11 +37,10 @@ uint64_t microsSinceEpoch();
 
 int main(int argc, char* argv[])
 {
-	
 	char help[] = "--help";
 	char target_ip[100];
-	float position[6] = {};
-	int sock = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
+	float position[6] = {10.1, 23.7, 34.5, 3.2, 1.1, 3.3};
+	int sock = 0;
 	struct sockaddr_in gcAddr; 
 	struct sockaddr_in locAddr;
 	uint8_t buf[BUFFER_LENGTH];
@@ -56,7 +53,7 @@ int main(int argc, char* argv[])
 	unsigned int temp = 0;
 
 	// Check if --help flag was used
-	if ((argc == 2) && (strcmp(argv[1], help) == 0))
+	if((argc == 2) && (strcmp(argv[1], help) == 0))
     {
 		printf("\n");
 		printf("\tUsage:\n\n");
@@ -68,37 +65,49 @@ int main(int argc, char* argv[])
     }
 	
 	// Change the target ip if parameter was given
-	strcpy(target_ip, CLIENT_IP);
-	if (argc == 2)
+	if(argc == 2)
     {
 		strcpy(target_ip, argv[1]);
     }
+    else
+    {
+		strcpy(target_ip, CLIENT_IP);
+    }
 	
+	// Socket Initial
+	if((sock = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
+	{
+		perror("[ERR] socket initial failed");
+		exit(EXIT_FAILURE);
+	}
+
+	/* Attempt to make it non blocking */
+#if (defined __QNX__) | (defined __QNXNTO__)
+	if(fcntl(sock, F_SETFL, O_NONBLOCK | FASYNC) == -1)
+#else
+	if(fcntl(sock, F_SETFL, O_NONBLOCK | O_ASYNC) == -1)
+#endif
+    {
+		fprintf(stderr, "[ERR] setting nonblocking: %s\n", strerror(errno));
+		close(sock);
+		exit(EXIT_FAILURE);
+    }
+	
+	// Server Address config
 	memset(&locAddr, 0, sizeof(locAddr));
-	locAddr.sin_family = AF_INET;
-	locAddr.sin_addr.s_addr = INADDR_ANY;
+	locAddr.sin_family = AF_INET;			// AF_UNIX/AF_LOCAL/AF_INET/AF_INET6/PF_INET
+	locAddr.sin_addr.s_addr = INADDR_ANY;	// inet_addr("127.0.0.1")
 	locAddr.sin_port = htons(SERVER_PORT);
 	
-	/* Bind the socket to port 14551 - necessary to receive packets from qgroundcontrol */ 
-	if (-1 == bind(sock,(struct sockaddr *)&locAddr, sizeof(struct sockaddr)))
+	/* Bind the socket to Local Address:SERVER_PORT - necessary to receive packets from qgroundcontrol */ 
+	if(bind(sock, (struct sockaddr *)&locAddr, sizeof(struct sockaddr)) == -1)
     {
-		perror("error bind failed");
+		perror("[ERR] bind failed");
 		close(sock);
 		exit(EXIT_FAILURE);
     } 
 	
-	/* Attempt to make it non blocking */
-#if (defined __QNX__) | (defined __QNXNTO__)
-	if (fcntl(sock, F_SETFL, O_NONBLOCK | FASYNC) < 0)
-#else
-	if (fcntl(sock, F_SETFL, O_NONBLOCK | O_ASYNC) < 0)
-#endif
-    {
-		fprintf(stderr, "error setting nonblocking: %s\n", strerror(errno));
-		close(sock);
-		exit(EXIT_FAILURE);
-    }
-	
+	// Client Address config
 	memset(&gcAddr, 0, sizeof(gcAddr));
 	gcAddr.sin_family = AF_INET;
 	gcAddr.sin_addr.s_addr = inet_addr(target_ip);
@@ -110,30 +119,27 @@ int main(int argc, char* argv[])
     {
 		// Send Messages
 		
-		/*Send Heartbeat HEARTBEAT */
+		/* Send Heartbeat HEARTBEAT */
 		mavlink_msg_heartbeat_pack(SYSTEM_ID, COMPONENT_ID, &msg, 
-									MAV_TYPE_HELICOPTER, MAV_AUTOPILOT_PX4, MAV_MODE_GUIDED_ARMED, 0, MAV_STATE_ACTIVE);
+									MAV_TYPE_HELICOPTER, MAV_AUTOPILOT_PX4, MAV_MODE_STABILIZE_ARMED, 0, MAV_STATE_ACTIVE);
 		len = mavlink_msg_to_send_buffer(buf, &msg);
 		bytes_sent = sendto(sock, buf, len, 0, (struct sockaddr*)&gcAddr, sizeof(struct sockaddr));
 		
 		/* Send Status SYS_STATUS */
 		mavlink_msg_sys_status_pack(SYSTEM_ID, COMPONENT_ID, &msg, 
-									0, 0, 0, 500, 11000, -1, -1, 0, 0, 0, 0, 0, 0);
+									0, 0, 0, 500, 11000, -1, 100, 0, 0, 0, 0, 0, 0);
 		len = mavlink_msg_to_send_buffer(buf, &msg);
 		bytes_sent = sendto(sock, buf, len, 0, (struct sockaddr*)&gcAddr, sizeof (struct sockaddr));
 		
 		/* Send Local Position LOCAL_POSITION_NED */
 		mavlink_msg_local_position_ned_pack(SYSTEM_ID, COMPONENT_ID, &msg, 
-										microsSinceEpoch(), 
-										position[0], position[1], position[2],
-										position[3], position[4], position[5]);
+										microsSinceEpoch(), position[0], position[1], position[2], position[3], position[4], position[5]);
 		len = mavlink_msg_to_send_buffer(buf, &msg);
 		bytes_sent = sendto(sock, buf, len, 0, (struct sockaddr*)&gcAddr, sizeof(struct sockaddr));
 		
-		/* Send attitude */
+		/* Send attitude ATTITUDE */
 		mavlink_msg_attitude_pack(SYSTEM_ID, COMPONENT_ID, &msg, 
-									microsSinceEpoch(), 1.2, 1.7, 3.14, 
-									0.01, 0.02, 0.03);
+									microsSinceEpoch(), 1.2, 1.7, 3.14, 0.01, 0.02, 0.03);
 		len = mavlink_msg_to_send_buffer(buf, &msg);
 		bytes_sent = sendto(sock, buf, len, 0, (struct sockaddr*)&gcAddr, sizeof(struct sockaddr));
 		
@@ -143,21 +149,20 @@ int main(int argc, char* argv[])
 		
 		recsize = recvfrom(sock, (void *)buf, BUFFER_LENGTH, 0, (struct sockaddr *)&gcAddr, &fromlen);
 
-		if (recsize > 0)
+		if(recsize > 0)
       	{
-			// Something received - print out all bytes and parse packet
 			mavlink_message_t msg;
 			mavlink_status_t status;
 			
 			printf("Bytes Received: %d\nDatagram: ", (int)recsize);
 
-			for (i = 0; i < recsize; i++)
+			for(i = 0; i < recsize; i++)
 			{
 				temp = buf[i];
 
 				printf("%02x ", (unsigned char)buf[i]);
 
-				if (mavlink_parse_char(MAVLINK_COMM_0, buf[i], &msg, &status) == MAVLINK_FRAMING_OK)
+				if(mavlink_parse_char(MAVLINK_COMM_0, buf[i], &msg, &status) == MAVLINK_FRAMING_OK)
 				{
 					// Packet received
 					printf("\nReceived packet: SYS:%d, COMP:%d, LEN:%d, MSG:%d, SEQ:%d, \n", 
