@@ -2,10 +2,12 @@
 MAVLink study on UDP socket at localhost "127.0.0.1".
 
 Reference:<br>
-https://mavlink.io/en/mavgen_c/example_c_udp.html
+MAVLink website: https://mavlink.io/en/mavgen_c/example_c_udp.html<br>
+Socket tutorial: http://zake7749.github.io/2015/03/17/SocketProgramming/<br>
+
 
 Source:<br>
-</t>Example source:<br>
+Example source:<br>
 			https://github.com/mavlink/mavlink/tree/master/examples/linux<br>
 		MAVLink Library:<br>
 			https://mavlink.io/en/#prebuilt_libraries<br>
