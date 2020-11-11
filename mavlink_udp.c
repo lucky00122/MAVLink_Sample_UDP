@@ -41,15 +41,11 @@ int main(int argc, char* argv[])
 {
 	
 	char help[] = "--help";
-	
-	
 	char target_ip[100];
-	
 	float position[6] = {};
 	int sock = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
 	struct sockaddr_in gcAddr; 
 	struct sockaddr_in locAddr;
-	//struct sockaddr_in fromAddr;
 	uint8_t buf[BUFFER_LENGTH];
 	ssize_t recsize;
 	socklen_t fromlen = sizeof(gcAddr);
@@ -57,9 +53,8 @@ int main(int argc, char* argv[])
 	mavlink_message_t msg;
 	uint16_t len;
 	int i = 0;
-	//int success = 0;
 	unsigned int temp = 0;
-	printf("test\n");
+
 	// Check if --help flag was used
 	if ((argc == 2) && (strcmp(argv[1], help) == 0))
     {
@@ -72,14 +67,12 @@ int main(int argc, char* argv[])
 		exit(EXIT_FAILURE);
     }
 	
-	
 	// Change the target ip if parameter was given
 	strcpy(target_ip, CLIENT_IP);
 	if (argc == 2)
     {
 		strcpy(target_ip, argv[1]);
     }
-	
 	
 	memset(&locAddr, 0, sizeof(locAddr));
 	locAddr.sin_family = AF_INET;
@@ -100,22 +93,20 @@ int main(int argc, char* argv[])
 #else
 	if (fcntl(sock, F_SETFL, O_NONBLOCK | O_ASYNC) < 0)
 #endif
-
     {
 		fprintf(stderr, "error setting nonblocking: %s\n", strerror(errno));
 		close(sock);
 		exit(EXIT_FAILURE);
     }
 	
-	
 	memset(&gcAddr, 0, sizeof(gcAddr));
 	gcAddr.sin_family = AF_INET;
 	gcAddr.sin_addr.s_addr = inet_addr(target_ip);
 	gcAddr.sin_port = htons(CLIENT_PORT);
 	
+	printf("Start sending/receiving MAVLink message to/from QGroundControl...\n");
 	
-	
-	for (;;) 
+	while(1) 
     {
 		// Send Messages
 		
@@ -151,6 +142,7 @@ int main(int argc, char* argv[])
 		// Receive Messages
 		
 		recsize = recvfrom(sock, (void *)buf, BUFFER_LENGTH, 0, (struct sockaddr *)&gcAddr, &fromlen);
+
 		if (recsize > 0)
       	{
 			// Something received - print out all bytes and parse packet
@@ -158,10 +150,13 @@ int main(int argc, char* argv[])
 			mavlink_status_t status;
 			
 			printf("Bytes Received: %d\nDatagram: ", (int)recsize);
+
 			for (i = 0; i < recsize; i++)
 			{
 				temp = buf[i];
+
 				printf("%02x ", (unsigned char)buf[i]);
+
 				if (mavlink_parse_char(MAVLINK_COMM_0, buf[i], &msg, &status) == MAVLINK_FRAMING_OK)
 				{
 					// Packet received
@@ -171,19 +166,18 @@ int main(int argc, char* argv[])
 			}
 			printf("\n");
 		}
+
 		memset(buf, 0, BUFFER_LENGTH);
+
 		sleep(1); // Sleep one second
     }
 }
-
 
 /* QNX timer version */
 #if (defined __QNX__) | (defined __QNXNTO__)
 uint64_t microsSinceEpoch()
 {
-	
 	struct timespec time;
-	
 	uint64_t micros = 0;
 	
 	clock_gettime(CLOCK_REALTIME, &time);  
@@ -194,9 +188,7 @@ uint64_t microsSinceEpoch()
 #else
 uint64_t microsSinceEpoch()
 {
-	
 	struct timeval tv;
-	
 	uint64_t micros = 0;
 	
 	gettimeofday(&tv, NULL);  
