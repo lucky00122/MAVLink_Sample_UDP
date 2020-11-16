@@ -1,8 +1,13 @@
 /*
- This program sends some data to qgroundcontrol using the mavlink protocol.  The sent packets
- cause qgroundcontrol to respond with heartbeats.  Any settings or custom commands sent from
- qgroundcontrol are printed by this program along with the heartbeats.
+ * File name: mavlink_udp.c
+ * Purpose: This program sends some data to qgroundcontrol using the mavlink protocol.  The sent packets
+ * cause qgroundcontrol to respond with heartbeats.  Any settings or custom commands sent from
+ * qgroundcontrol are printed by this program along with the heartbeats.
+ * Creating Date: 2019.11.20
+ * Author/Charge: Panda Wang (lucky00122@gmail.com)
+ * Note: N/A
  */
+
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
