@@ -50,7 +50,6 @@ int main(int argc, char* argv[])
 	mavlink_message_t msg;
 	uint16_t len;
 	int i = 0;
-	unsigned int temp = 0;
 
 	// Check if --help flag was used
 	if((argc == 2) && (strcmp(argv[1], help) == 0))
@@ -158,8 +157,6 @@ int main(int argc, char* argv[])
 
 			for(i = 0; i < recsize; i++)
 			{
-				temp = buf[i];
-
 				printf("%02x ", (unsigned char)buf[i]);
 
 				if(mavlink_parse_char(MAVLINK_COMM_0, buf[i], &msg, &status) == MAVLINK_FRAMING_OK)
